@@ -15,6 +15,7 @@ const app = express();
 app.use(bodyParser.json());
 app.use (cors());
 app.use(express.static('service'))
+app.use(express.static('review'))
 app.use(fileUpload());
 
 const port = 5000;
@@ -29,6 +30,7 @@ app.get('/', (req, res) =>{
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 client.connect(err => {
   const serviceCollection = client.db("landryServer").collection("service");
+  const reviewCollection = client.db("landryServer").collection("review");
   
   app.post("/service", (req, res) => {
       const file = req.files.file;
@@ -63,6 +65,51 @@ client.connect(err => {
       res.send(documents);
     });
   });
+
+
+  app.post('/addReview', (req, res) => {
+    const file = req.files.file;
+    const name = req.body.name;
+    const title = req.body.title;
+    const textarea = req.body.textarea;
+    const filePath = `${__dirname}/review/${file.name}`;
+
+
+    file.mv(filePath, err => {
+      if (err) {
+        res.status(500).send({msg: 'Failed to upload Image'})
+      }
+      const newImg = fs.readFileSync(filePath);
+      const encImg = newImg.toString('base64');
+
+      var image = {
+        contentType: req.files.file.mimetype,
+        size: req.files.file.size,
+        img: Buffer(encImg, 'base64')
+      }
+
+      reviewCollection.insertOne({name, title, textarea, image})
+      .then(result => {
+        fs.remove(filePath, error => {
+          if(error) {
+            res.status(500).send({msg: 'Failed to upload Image'})
+          }
+          res.send(result.insertedCount > 0)
+        })
+        
+      })
+    })
+    
+  })
+
+  app.get("/review", (req, res) => {
+    reviewCollection.find({}).toArray((err, documents) => {
+      console.log(err);
+      res.send(documents);
+    });
+  });
+  
+
 });
 
 

@@ -36,28 +36,29 @@ client.connect(err => {
       const file = req.files.file;
       const name = req.body.name;
       const textarea = req.body.textarea;
-      const filePath = `${__dirname}/service/${file.name}`;
       const price = req.body.price;
-        file.mv(filePath, err => {
-            if(err) {
-                res.status(500).send({msg: 'Failed to upload Image'})
-            }
-            const newImg = fs.readFileSync(filePath);
+
+      // const filePath = `${__dirname}/service/${file.name}`;
+        // file.mv(filePath, err => {
+        //     if(err) {
+        //         res.status(500).send({msg: 'Failed to upload Image'})
+        //     }
+            const newImg = file.data;
             const encImg = newImg.toString('base64');
 
             var image = {
-              contentType: req.files.file.mimetype,
-              size: req.files.file.size,
-              img: Buffer(encImg, 'base64')
+              contentType: file.mimetype,
+              size: file.size,
+              img: Buffer.from(encImg, 'base64')
             }
             serviceCollection.insertOne({name, textarea, price, image})
             .then((result) =>{
-                fs.remove(filePath, error => {
-                  if(error) { res.status(500).send({msg: 'Failed to upload Image'})}
+                // fs.remove(filePath, error => {
+                //   if(error) { res.status(500).send({msg: 'Failed to upload Image'})}
                   res.send(result.insertedCount > 0);
-                })
+                // })
             })
-        })
+        // })
   })
   app.get("/service", (req, res) => {
     serviceCollection.find({})
@@ -72,33 +73,33 @@ client.connect(err => {
     const name = req.body.name;
     const title = req.body.title;
     const textarea = req.body.textarea;
-    const filePath = `${__dirname}/review/${file.name}`;
+    // const filePath = `${__dirname}/review/${file.name}`;
 
 
-    file.mv(filePath, err => {
-      if (err) {
-        res.status(500).send({msg: 'Failed to upload Image'})
-      }
-      const newImg = fs.readFileSync(filePath);
+    // file.mv(filePath, err => {
+    //   if (err) {
+    //     res.status(500).send({msg: 'Failed to upload Image'})
+    //   }
+      const newImg = file.data;
       const encImg = newImg.toString('base64');
 
       var image = {
-        contentType: req.files.file.mimetype,
-        size: req.files.file.size,
-        img: Buffer(encImg, 'base64')
+        contentType: file.mimetype,
+        size: file.size,
+        img: Buffer.from(encImg, 'base64')
       }
 
       reviewCollection.insertOne({name, title, textarea, image})
       .then(result => {
-        fs.remove(filePath, error => {
-          if(error) {
-            res.status(500).send({msg: 'Failed to upload Image'})
-          }
+        // fs.remove(filePath, error => {
+        //   if(error) {
+        //     res.status(500).send({msg: 'Failed to upload Image'})
+        //   }
           res.send(result.insertedCount > 0)
-        })
+        // })
         
       })
-    })
+    // })
     
   })
 

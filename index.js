@@ -107,6 +107,13 @@ app.post('/isAdmin', (req, res) => {
 })
 
   app.get('/orders', (req, res) => {
+    ordersCollection.find()
+    .toArray((err, items) => {
+      res.send(items)
+    })
+  })
+
+  app.get('/booking', (req, res) => {
     ordersCollection.find({email: req.query.email})
     .toArray((err, items) => {
       res.send(items)

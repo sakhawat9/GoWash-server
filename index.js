@@ -36,6 +36,7 @@ client.connect(err => {
   const serviceCollection = client.db("landryServer").collection("service");
   const reviewCollection = client.db("landryServer").collection("review");
   const ordersCollection = client.db("landryServer").collection("orders");
+  const adminCollection = client.db("landryServer").collection("admin");
   
   app.post("/service", (req, res) => {
       const file = req.files.file;
@@ -88,8 +89,25 @@ client.connect(err => {
     })
 })
 
+  app.post('/admin', (req, res) => {
+    const order = req.body;
+    adminCollection.insertOne(order)
+    .then(result => {
+      console.log(result);
+        res.send(result.insertedCount > 0);
+    })
+})
+app.post('/isAdmin', (req, res) => {
+  const email = req.body.email;
+  console.log(email)
+  adminCollection.find({ email: email})
+    .toArray((err, items) => {
+      res.send(items.length > 0);
+    })
+})
+
   app.get('/orders', (req, res) => {
-    ordersCollection.find({})
+    ordersCollection.find({email: req.query.email})
     .toArray((err, items) => {
       res.send(items)
     })

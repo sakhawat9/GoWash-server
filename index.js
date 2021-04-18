@@ -1,18 +1,22 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+
+
+
 const cors = require('cors');
 const fs = require('fs-extra');
 const fileUpload = require('express-fileupload');
 const MongoClient = require('mongodb').MongoClient;
+const ObjectID = require('mongodb').ObjectID
 require('dotenv').config()
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.0hcik.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`;
 
-console.log(process.env.DB_NAME);
 
 const app = express();
 
-app.use(bodyParser.json());
+app.use(bodyParser.json({limit: "50mb"}));
+app.use(bodyParser.urlencoded({limit: "50mb", extended: true, parameterLimit:50000}));
 app.use (cors());
 app.use(express.static('service'))
 app.use(express.static('review'))
@@ -31,6 +35,7 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 client.connect(err => {
   const serviceCollection = client.db("landryServer").collection("service");
   const reviewCollection = client.db("landryServer").collection("review");
+  const ordersCollection = client.db("landryServer").collection("orders");
   
   app.post("/service", (req, res) => {
       const file = req.files.file;
@@ -38,11 +43,6 @@ client.connect(err => {
       const textarea = req.body.textarea;
       const price = req.body.price;
 
-      // const filePath = `${__dirname}/service/${file.name}`;
-        // file.mv(filePath, err => {
-        //     if(err) {
-        //         res.status(500).send({msg: 'Failed to upload Image'})
-        //     }
             const newImg = file.data;
             const encImg = newImg.toString('base64');
 
@@ -53,12 +53,9 @@ client.connect(err => {
             }
             serviceCollection.insertOne({name, textarea, price, image})
             .then((result) =>{
-                // fs.remove(filePath, error => {
-                //   if(error) { res.status(500).send({msg: 'Failed to upload Image'})}
                   res.send(result.insertedCount > 0);
-                // })
+ 
             })
-        // })
   })
   app.get("/service", (req, res) => {
     serviceCollection.find({})
@@ -67,19 +64,43 @@ client.connect(err => {
     });
   });
 
+  app.delete('/delete/:id', (req, res) => {
+    const id = ObjectID(req.params.id);
+    serviceCollection.findOneAndDelete({_id: id})
+    .then((result) => {
+        res.send(!!result.value)
+    })
+  })
+
+  app.get('/singleService/:id', (req, res) => {
+    const id = ObjectID(req.params.id);
+    serviceCollection.find({_id: id})
+    .toArray((err, items) => {
+      res.send(items);
+    })
+  })
+
+  app.post('/addBooking', (req, res) => {
+    const order = req.body;
+    ordersCollection.insertOne(order)
+    .then(result => {
+        res.send(result.insertedCount > 0);
+    })
+})
+
+  app.get('/orders', (req, res) => {
+    ordersCollection.find({})
+    .toArray((err, items) => {
+      res.send(items)
+    })
+  })
 
   app.post('/addReview', (req, res) => {
     const file = req.files.file;
     const name = req.body.name;
     const title = req.body.title;
     const textarea = req.body.textarea;
-    // const filePath = `${__dirname}/review/${file.name}`;
 
-
-    // file.mv(filePath, err => {
-    //   if (err) {
-    //     res.status(500).send({msg: 'Failed to upload Image'})
-    //   }
       const newImg = file.data;
       const encImg = newImg.toString('base64');
 
@@ -91,21 +112,13 @@ client.connect(err => {
 
       reviewCollection.insertOne({name, title, textarea, image})
       .then(result => {
-        // fs.remove(filePath, error => {
-        //   if(error) {
-        //     res.status(500).send({msg: 'Failed to upload Image'})
-        //   }
           res.send(result.insertedCount > 0)
-        // })
-        
+  
       })
-    // })
-    
   })
 
   app.get("/review", (req, res) => {
     reviewCollection.find({}).toArray((err, documents) => {
-      console.log(err);
       res.send(documents);
     });
   });
